@@ -23,12 +23,16 @@ Say you need to have motor A turn clo`ckwise at 33% of its full speed.  The subr
 motorA(1, 33);
 */
 
+/* 12/23 課題 */
+/*
+ * 1.止まるのをなんとかしたい。常に動き続けて欲しい。
+ * 2.見た目をよくしたい。3Dプリンタを使う？
+ * /
+/*    */
 #include <Servo.h>      //servo library
 //#include "pitches.h"  // used for the speaker output, add pitches.h to a pitches folder under /documents/arduino/libraies.
 #define SPEAKER 10      // define a Speaker Pin, if you add a buzzer or speaker, uncomment the pitches.h library, and buzz methods.
-
-Servo headservo;        // initialize a servo object
-  
+ 
 //Hardware set the pins
 // L298D Motor Controller
 #define ENA 5  //enable A on pin 5 (must be a pwm pin)   Speed Control
@@ -38,6 +42,8 @@ Servo headservo;        // initialize a servo object
 #define IN2 7  //IN2 on pin controls Motor A
 #define IN3 2  //IN3 on pin conrtols Motor B  Motor B Left Motor (view from front)
 #define IN4 4  //IN4 on pin controls Motor B 
+
+#define SERIAL_PORT 9600 // 自分が追加
 
 const int rightmotorpin1 = IN1;  //signal output 1 of Dc motor 
 const int rightmotorpin2 = IN2;  //signal output 2 of Dc motor 
@@ -53,14 +59,16 @@ const int HeadServopin = 9; // pin for signal input of headservo
 
 const int button1Pin = 8;  // pushbutton 1 pin
 
-int add= 0;       //used for nodanger loop count
-int add1= 0;      //used for nodanger loop count
+int add= 0;       //used for nodanger loop count 疑問：なぜカウントしてるかわからない
+int add1= 0;      //used for nodanger loop count 疑問：なぜカウントしてるかわからない
 int roam = 0;     //just listen for serial commands and wait
 int currDist = 5000; // distance
 boolean running = false;// boolean to flag whether i'm running or not
 
+Servo headservo;        // initialize a servo object
+
 void setup() { 
-Serial.begin(9600); // Enables Serial monitor for debugging purposes
+Serial.begin(SERIAL_PORT); // Enables Serial monitor for debugging purposes
 Serial.println("Ready to receive Serial Commands![f, b, r, l, s, t, 1]"); // Tell us I"m ready
 Serial.println("My Commands are: ");
 Serial.println("f:forward");
@@ -69,6 +77,7 @@ Serial.println("r:right");
 Serial.println("l:left");
 Serial.println("s:stop");
 Serial.println("t:toggleRoam");
+Serial.println("1:"); //追記
 
  //signal output port
  //set all of the outputs for the motor driver
@@ -77,7 +86,7 @@ Serial.println("t:toggleRoam");
   pinMode(IN3, OUTPUT);       // Motor Driver
   pinMode(IN4, OUTPUT);       // Motor Driver
   
-  motorSpeed = 55;            // Set motorSpeed variable with an initial motor speed % (percentage)  low end is about 20
+  motorSpeed = 50;            // Set motorSpeed variable with an initial motor speed % (percentage)  low end is about 20
 
   // Set up the pushbutton pins to be an input:
   pinMode(button1Pin, INPUT);
@@ -98,16 +107,19 @@ headservo.write(20);
 delay(1000);
 headservo.write(90);
 delay(1000);
-
 }
+
 void loop() 
   {
-    int button1State =LOW;  // variables to hold the pushbutton states
+    int button1State =LOW;  // variables to hold the pushbutton states 追記：何もしていない
+
+    Serial.print(Serial.read()); // 追記
+    
     if (1) //テスト用、モード判定の停止
 //    if (Serial.available() > 0)
     {
 //     int val = 'f';  //テスト用。forwardモードで固定。
-     int val = 't';  //テスト用。roamモードで固定。
+     int val = '1';  //テスト用。roamモードで固定。
  //    int val = Serial.read();  //read serial input commands
  //    buzz();
     switch(val)
@@ -170,10 +182,10 @@ void loop()
       Serial.println("toggle Roam Mode"); 
       toggleRoam();
       break;
-    }      
-   // delay(1);  
+    }
     Serial.println("I'm Ready to receive Serial Commands![f, b, r, l, s, t, 1]"); // Tell us I"m ready
-  }            
+  }  //Serial.available()に対応する
+            
   if(roam == 0){ 
       //just listen for serial commands and wait
       }
@@ -232,145 +244,6 @@ void brake()
     Serial.println("Brake");
 }
 
-//******************   Motor A control   *******************
-void motorA(int mode, int percent)
-{
- // Method that will accept mode and speed in percentage.  
- // mode: The 3 modes are 0) coast  1) Clockwise motor  2) Counter-clockwise 3) brake
- // percent: The speed of the motor in percentage value for the PWM.
-  //change the percentage range of 0 -> 100 into the PWM
-  //range of 0 -> 255 using the map function
-  int duty = map(percent, 0, 100, 0, 255);
-  
-  switch(mode)
-  {
-    case 0:  //disable/coast
-      digitalWrite(ENA, LOW);  //set enable low to disable A
-      Serial.println("Disable/coast A");
-      break;
-      
-    case 1:  //turn clockwise
-      //setting IN1 high connects motor lead 1 to +voltage
-      digitalWrite(IN1, HIGH);   
-      
-      //setting IN2 low connects motor lead 2 to ground
-      digitalWrite(IN2, LOW);  
-      
-      //use pwm to control motor speed through enable pin
-      analogWrite(ENA, duty);  
-      Serial.println("turn motor A clockwise");
-      
-      break;
-      
-    case 2:  //turn counter-clockwise
-      //setting IN1 low connects motor lead 1 to ground
-      digitalWrite(IN1, LOW);   
-      
-      //setting IN2 high connects motor lead 2 to +voltage
-      digitalWrite(IN2, HIGH);  
-      
-      //use pwm to control motor speed through enable pin
-      analogWrite(ENA, duty);  
-      Serial.println("turn motor A counter-clockwise");
-      
-      break;
-      
-    case 3:  //brake motor
-      //setting IN1 low connects motor lead 1 to ground
-      digitalWrite(IN1, LOW);   
-      
-      //setting IN2 high connects motor lead 2 to ground
-      digitalWrite(IN2, LOW);  
-      
-      //use pwm to control motor braking power 
-      //through enable pin
-      analogWrite(ENA, duty);  
-      Serial.println("brake motor A");
-      
-      break;
-  }
-}
-//**********************************************************
-//******************   Motor B control   *******************
-  void motorB(int mode, int percent)
-{
-  //change the percentage range of 0 -> 100 into the PWM
-  //range of 0 -> 255 using the map function
-  int duty = map(percent, 0, 100, 0, 255);
-  
-  switch(mode)
-  {
-    case 0:  //disable/coast
-      digitalWrite(ENB, LOW);  //set enable low to disable B
-      Serial.println("Disable/coast B");
-      break;
-      
-    case 1:  //turn clockwise
-      //setting IN3 high connects motor lead 1 to +voltage
-      digitalWrite(IN3, HIGH);   
-      
-      //setting IN4 low connects motor lead 2 to ground
-      digitalWrite(IN4, LOW);  
-      
-      //use pwm to control motor speed through enable pin
-      analogWrite(ENB, duty); 
-           Serial.println("turn motor B clockwise"); 
-      
-      break;
-      
-    case 2:  //turn counter-clockwise
-      //setting IN3 low connects motor lead 1 to ground
-      digitalWrite(IN3, LOW);   
-      
-      //setting IN4 high connects motor lead 2 to +voltage
-      digitalWrite(IN4, HIGH);  
-      
-      //use pwm to control motor speed through enable pin
-      analogWrite(ENB, duty);  
-       Serial.println("turn motor B counter-clockwise");
-      
-      break;
-      
-    case 3:  //brake motor
-      //setting IN3 low connects motor lead 1 to ground
-      digitalWrite(IN3, LOW);   
-      
-      //setting IN4 high connects motor lead 2 to ground
-      digitalWrite(IN4, LOW);  
-      
-      //use pwm to control motor braking power 
-      //through enable pin
-      analogWrite(ENB, duty);  
-      Serial.println("brake motor B");      
-      break;
-  }
-}
-//**********************************************************
-/*
-void buzz(){
- // method to create a buzz sound
-tone(SPEAKER, NOTE_C7, 100);
-delay(50);
-tone(SPEAKER, NOTE_C6, 100);
-delay(50);
-}
-void intialize_beeps()
-{
-   //initializing the robot beeps sound
-  tone(SPEAKER, NOTE_C7, 100);
-  delay(500);
-  tone(SPEAKER, NOTE_C6, 100);
-  tone(SPEAKER, NOTE_C7, 100);
-  delay(500);
-  tone(SPEAKER, NOTE_C6, 100);
-  tone(SPEAKER, NOTE_C7, 100);
-  delay(500);
-  tone(SPEAKER, NOTE_C6, 100);
-  delay(500);
-  //End Initialize Beeps
-  
-}
-*/
 void toggleRoam(){
   // This method chooses to make the robot roam or else use the serial command input.
 if(roam == 0){
@@ -402,7 +275,9 @@ Serial.println("Nodanger: ");
 else if(currDist < 35){
   //add=0;
   Serial.println("Forward Blocked- Decide Which Way");
-  moveBackward(30);            // Move backward with % speed
+  moveBackward(motorSpeed);            // Move backward with % speed
+  delay(500);
+ // moveBackward(30);            // Move backward with % speed
   whichway();                  // decide which way to go
    }
   }
