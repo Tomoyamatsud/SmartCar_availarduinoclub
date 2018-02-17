@@ -62,6 +62,7 @@ const int button1Pin = 8;  // pushbutton 1 pin
 int add= 0;       //used for nodanger loop count 疑問：なぜカウントしてるかわからない
 int add1= 0;      //used for nodanger loop count 疑問：なぜカウントしてるかわからない
 int roam = 0;     //just listen for serial commands and wait
+int motorSpeed = 20;            // Set motorSpeed variable with an initial motor speed % (percentage)  low end is about 20
 int currDist = 5000; // distance
 boolean running = false;// boolean to flag whether i'm running or not
 
@@ -86,8 +87,6 @@ Serial.println("1:"); //追記
   pinMode(IN3, OUTPUT);       // Motor Driver
   pinMode(IN4, OUTPUT);       // Motor Driver
   
-  motorSpeed = 50;            // Set motorSpeed variable with an initial motor speed % (percentage)  low end is about 20
-
   // Set up the pushbutton pins to be an input:
   pinMode(button1Pin, INPUT);
   int button1State=LOW;
@@ -101,12 +100,12 @@ Serial.println("1:"); //追記
 // setup and test the servo:
 headservo.attach(HeadServopin);
 //start my movable servo head, to verify I work.
-headservo.write(180);
-delay(1000);
 headservo.write(20);
-delay(1000);
+delay(500);
+headservo.write(180);
+delay(500);
 headservo.write(90);
-delay(1000);
+delay(500);
 }
 
 void loop() 
@@ -115,12 +114,9 @@ void loop()
 
     Serial.print(Serial.read()); // 追記
     
-    if (1) //テスト用、モード判定の停止
-//    if (Serial.available() > 0)
+    if (Serial.available() > 0)
     {
-//     int val = 'f';  //テスト用。forwardモードで固定。
-     int val = '1';  //テスト用。roamモードで固定。
- //    int val = Serial.read();  //read serial input commands
+      int val = Serial.read();  //read serial input commands
  //    buzz();
     switch(val)
     {
@@ -257,30 +253,25 @@ if(roam == 0){
   }
 }
 void goRoam(){
- // insert roaming function control here. 
-   Serial.println("Im going roaming");
-//    moveForward(10);    // テスト。モーターの速度を10%に固定。
-    moveForward(motorSpeed);    // temporary just go forward for a little while
-    delay(3000);
-    brake();
-//time = millis(); // Sets "time" to current system time count
-currDist = MeasuringDistance(); //measure front distance
-Serial.print("Current Forward Distance: ");
-Serial.println(currDist);                       // Print the current distance
-if(currDist > 35) {
-  add = (add1++);// Start adding up the loop count done in nodanger
-nodanger();
-Serial.println("Nodanger: ");
-}
-else if(currDist < 35){
-  //add=0;
-  Serial.println("Forward Blocked- Decide Which Way");
-  moveBackward(motorSpeed);            // Move backward with % speed
-  delay(500);
- // moveBackward(30);            // Move backward with % speed
-  whichway();                  // decide which way to go
-   }
+  Serial.println("Im going roaming");
+  moveForward(motorSpeed);    // temporary just go forward for a little while
+//  time = millis(); // Sets "time" to current system time count
+  currDist = MeasuringDistance(); //measure front distance
+  Serial.print("Current Forward Distance: ");
+  Serial.println(currDist);                       // Print the current distance
+  if(currDist > 35) {
+    delay(5000); // delayミリ秒間前進
   }
+  else{
+    //add=0;
+    Serial.println("Forward Blocked- Decide Which Way");
+    brake();
+    delay(500);
+    moveBackward(motorSpeed);            // Move backward with % speed
+    delay(500);
+    whichway();                  // decide which way to go
+  }
+}
    
 //measure distance, unit “cm”
 long MeasuringDistance() {
@@ -347,13 +338,4 @@ Serial.println("Decided Left Is Best");
 headservo.write(90);             // 2017.11.25 テスト用コード追加。サーボを正面に向ける。
 return;
 } 
-
-void doDemo(){
-    // define something for the robot to do when you press the pushbutton
-    
-    Serial.println("Im doing a demo");
-    delay(1000);
-    return;
-}
- 
 //**********************************************************
