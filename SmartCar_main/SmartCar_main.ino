@@ -23,12 +23,6 @@ Say you need to have motor A turn clo`ckwise at 33% of its full speed.  The subr
 motorA(1, 33);
 */
 
-/* 12/23 課題 */
-/*
- * 1.止まるのをなんとかしたい。常に動き続けて欲しい。
- * 2.見た目をよくしたい。3Dプリンタを使う？
- * /
-/*    */
 #include <Servo.h>      //servo library
 //#include "pitches.h"  // used for the speaker output, add pitches.h to a pitches folder under /documents/arduino/libraies.
 #define SPEAKER 10      // define a Speaker Pin, if you add a buzzer or speaker, uncomment the pitches.h library, and buzz methods.
